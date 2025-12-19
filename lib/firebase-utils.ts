@@ -100,5 +100,47 @@ export async function getProductById(id: string): Promise<Product | null> {
   const data = snap.data() as any
   const imageRaw = data.imageUrl ?? data.imagePath ?? data.image
   const image = await resolveImageURL(imageRaw)
-  return { id: snap.id, ...data, image }
+  
+  // Serialize timestamps to prevent toJSON issues
+  const serialized: any = { id: snap.id, ...data, image }
+  if (serialized.createdAt?.toDate) {
+    serialized.createdAt = serialized.createdAt.toDate().toISOString()
+  } else if (serialized.createdAt?.seconds) {
+    serialized.createdAt = new Date(serialized.createdAt.seconds * 1000).toISOString()
+  }
+  if (serialized.updatedAt?.toDate) {
+    serialized.updatedAt = serialized.updatedAt.toDate().toISOString()
+  } else if (serialized.updatedAt?.seconds) {
+    serialized.updatedAt = new Date(serialized.updatedAt.seconds * 1000).toISOString()
+  }
+  
+  return serialized
+}
+
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  if (!slug) return null
+  const col = collection(firestore, 'products')
+  const q = query(col, where('slug', '==', slug))
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  
+  const docSnap = snap.docs[0]
+  const data = docSnap.data() as any
+  const imageRaw = data.imageUrl ?? data.imagePath ?? data.image
+  const image = await resolveImageURL(imageRaw)
+  
+  // Serialize timestamps to prevent toJSON issues
+  const serialized: any = { id: docSnap.id, ...data, image }
+  if (serialized.createdAt?.toDate) {
+    serialized.createdAt = serialized.createdAt.toDate().toISOString()
+  } else if (serialized.createdAt?.seconds) {
+    serialized.createdAt = new Date(serialized.createdAt.seconds * 1000).toISOString()
+  }
+  if (serialized.updatedAt?.toDate) {
+    serialized.updatedAt = serialized.updatedAt.toDate().toISOString()
+  } else if (serialized.updatedAt?.seconds) {
+    serialized.updatedAt = new Date(serialized.updatedAt.seconds * 1000).toISOString()
+  }
+  
+  return serialized
 }

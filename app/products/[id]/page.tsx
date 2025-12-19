@@ -3,15 +3,14 @@ import Link from "next/link"
 import { Heart } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { QuantityStepper } from "@/components/quantity-stepper"
 import { HtmlContent } from "@/components/html-content"
-import { getProductById } from "@/lib/firebase-utils"
+import { getProductById, getProductBySlug } from "@/lib/firebase-utils"
+import { ProductDetailActions } from "@/components/product-detail-actions"
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   try {
-    // Ensure params is resolved before accessing id
-    const resolvedParams = await Promise.resolve(params);
-    const product = await getProductById(resolvedParams.id);
+    const { id } = await params
+    const product = await getProductBySlug(id);
     
     if (!product) {
       return {
@@ -33,8 +32,9 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
 }
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = (await getProductById(params.id)) ?? {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const product = (await getProductBySlug(id)) ?? {
     id: 'not-found',
     title: 'Product not found',
     price: 0,
@@ -44,33 +44,26 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-10 grid gap-8 md:grid-cols-[1fr_420px]">
-        <section>
-          <div className="relative aspect-[4/3] rounded-lg overflow-hidden border bg-card">
-            <Image src={product.image || "/placeholder.svg"} alt={String(product.title ?? '')} fill className="object-cover" />
+      <main className="w-[88%] mx-auto px-8 py-10 grid gap-12 lg:grid-cols-[1.5fr_420px]">
+        <section className="w-full">
+          <div className="w-full rounded-lg overflow-hidden border bg-card flex items-center justify-center bg-muted/20" style={{ height: '66%' }}>
+            <img 
+              src={product.image || "/placeholder.svg"} 
+              alt={product.title || ''} 
+              className="w-full h-full object-cover"
+            />
           </div>
         </section>
 
         <section>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.title}</h1>
-          <div className="mt-2 text-primary font-semibold">${Number(product.price || 0).toFixed(2)}</div>
+          <div className="mt-2 text-primary font-semibold">Rs {Math.round(Number(product.price || 0))}</div>
           <HtmlContent 
             html={product.description ?? 'No description available.'} 
             className="mt-4 text-sm leading-relaxed text-muted-foreground"
           />
 
-          <div className="mt-6 flex items-center gap-3">
-            <QuantityStepper />
-            <button className="h-10 flex-1 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90">
-              Add to Cart
-            </button>
-            <button
-              className="h-10 w-10 inline-flex items-center justify-center rounded-md border"
-              aria-label="Add to wishlist"
-            >
-              <Heart className="h-4 w-4" />
-            </button>
-          </div>
+          <ProductDetailActions product={product} />
 
           <hr className="my-8" />
 

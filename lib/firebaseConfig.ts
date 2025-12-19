@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
+import { getAuth } from 'firebase/auth'
 
 // Keep this file minimal and use the same NEXT_PUBLIC_* env vars as your admin panel.
 const firebaseConfig = {
@@ -52,5 +53,9 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 const firestore = getFirestore(app)
 const storage = getStorage(app)
+const auth = getAuth(app)
 
-export { app, firestore, storage }
+// Export db as an alias for firestore for backwards compatibility
+const db = firestore
+
+export { app, firestore, storage, auth, db }
